@@ -22,7 +22,7 @@ jobs:
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Instalar dependencias (Capacitor)
         run: npm install
