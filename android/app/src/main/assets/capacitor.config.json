@@ -1,0 +1,9 @@
+{
+	"appId": "com.questlog.agenda",
+	"appName": "Quest Log",
+	"webDir": "www",
+	"backgroundColor": "#0B1220",
+	"android": {
+		"backgroundColor": "#0B1220"
+	}
+}
