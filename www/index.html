@@ -967,6 +967,12 @@
     </div>
     <div class="recur-hint" id="tm-recur-hint" style="display:none;">Elige los días. Si no eliges ninguno, se repite cada semana el mismo día.</div>
 
+    <div class="toggle-row">
+      <div class="tlabel">🔔 Recordatorio diario</div>
+      <div class="switch" id="tm-daily-reminder"></div>
+    </div>
+    <div class="recur-hint" id="tm-daily-hint" style="display:none;">Te avisará todos los días a la hora de entrega hasta que la completes o venza (requiere fecha y hora, y que la app esté instalada — no en el navegador).</div>
+
     <div class="modal-actions">
       <div class="modal-btn danger" id="tm-delete" style="display:none;">🗑️</div>
       <div class="modal-btn cancel" id="tm-cancel">Cancelar</div>
@@ -1080,6 +1086,17 @@
       <div class="slabel">🎨 Tema de color</div>
       <div class="ssub">Elige el color que más te guste, sin restricciones</div>
       <div class="theme-swatches" id="theme-swatches"></div>
+    </div>
+    <div class="settings-item" style="display:block;">
+      <div class="slabel">⏰ Anticipación de notificaciones</div>
+      <div class="ssub">Además del aviso justo a la hora de entrega, recibe un recordatorio antes. Funciona aunque la app esté cerrada (requiere la app instalada, no en el navegador).</div>
+      <div class="seg" id="set-notif-lead" style="flex-wrap:wrap;">
+        <div class="seg-opt" data-val="0" style="flex:1 1 28%;">Solo a la hora</div>
+        <div class="seg-opt active" data-val="15" style="flex:1 1 28%;">15 min antes</div>
+        <div class="seg-opt" data-val="30" style="flex:1 1 28%;">30 min antes</div>
+        <div class="seg-opt" data-val="60" style="flex:1 1 28%;">1 hora antes</div>
+        <div class="seg-opt" data-val="1440" style="flex:1 1 28%;">1 día antes</div>
+      </div>
     </div>
     <div class="settings-item" style="display:block;">
       <div class="slabel">💾 Respaldo de datos</div>
@@ -1568,6 +1585,7 @@ function defaultData(){
     muted: false, vibrate: true, notify: false, lightMode: false,
     theme: "teal",
     fontScale: 1,
+    notifLeadMinutes: 15,
     history: [],
     lastExport: null,
     ritualShownDate: "",
@@ -1662,6 +1680,11 @@ function notifIdFor(str){
 // a programar solo lo pendiente con fecha y hora futuras (tareas de materias,
 // personales y eventos). Se llama sola cada vez que se guarda algo, así queda
 // sincronizado automáticamente sin que el usuario tenga que hacer nada.
+function formatLeadText(minutes){
+  if (minutes >= 1440) return "en 1 día";
+  if (minutes >= 60) return `en ${Math.round(minutes/60)} hora${minutes >= 120 ? "s" : ""}`;
+  return `en ${minutes} minutos`;
+}
 async function scheduleAllNotifications(){
   if (!isNativeApp()) return;
   const LocalNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
@@ -1678,17 +1701,60 @@ async function scheduleAllNotifications(){
 
   const toSchedule = [];
   const now = new Date();
+  const leadMin = data.notifLeadMinutes || 0;
+
+  // Agenda hasta 2 notificaciones por tarea/evento: un recordatorio anticipado
+  // (según lo configurado en Ajustes) y el aviso final justo a la hora de
+  // entrega. Cada una con su propio ID estable para poder reemplazarla luego.
+  function addPair(idBase, title, subLabel, when){
+    if (isNaN(when.getTime()) || when <= now) return;
+    if (leadMin > 0){
+      const leadWhen = new Date(when.getTime() - leadMin * 60000);
+      if (leadWhen > now){
+        toSchedule.push({
+          id: notifIdFor(idBase + "-lead"),
+          title: "⏰ " + title,
+          body: subLabel + " · vence " + formatLeadText(leadMin),
+          schedule: { at: leadWhen }
+        });
+      }
+    }
+    toSchedule.push({
+      id: notifIdFor(idBase + "-due"),
+      title: title,
+      body: subLabel,
+      schedule: { at: when }
+    });
+  }
 
   function addTaskNotif(t, subLabel){
     if (t.done || t.missed || !t.due || !t.dueTime) return;
     const when = new Date(`${t.due}T${t.dueTime}:00`);
-    if (isNaN(when.getTime()) || when <= now) return;
-    toSchedule.push({
-      id: notifIdFor("task-" + t.id),
-      title: "📌 " + t.text,
-      body: subLabel + " · entrega " + t.dueTime,
-      schedule: { at: when }
-    });
+    addPair("task-" + t.id, "📌 " + t.text, subLabel + " · entrega " + t.dueTime, when);
+    addDailyReminders(t, subLabel, when);
+  }
+  // Recordatorio diario: si la tarea lo tiene activado, agrega un aviso cada
+  // día a la hora de entrega, desde hoy hasta el día que vence (tope de 30
+  // avisos para no saturar). Cada día tiene su propio ID único.
+  function addDailyReminders(t, subLabel, dueWhen){
+    if (!t.dailyReminder || isNaN(dueWhen.getTime())) return;
+    const startDay = new Date(now); startDay.setHours(0,0,0,0);
+    const dueDay = new Date(dueWhen); dueDay.setHours(0,0,0,0);
+    let dayCount = Math.round((dueDay - startDay) / 86400000);
+    if (dayCount < 0) return;
+    if (dayCount > 30) dayCount = 30;
+    for (let i = 0; i <= dayCount; i++){
+      const d = new Date(startDay);
+      d.setDate(d.getDate() + i);
+      const when = new Date(`${dateStr(d)}T${t.dueTime}:00`);
+      if (isNaN(when.getTime()) || when <= now) continue;
+      toSchedule.push({
+        id: notifIdFor("task-" + t.id + "-daily-" + i),
+        title: "🔔 " + t.text,
+        body: subLabel + " · recordatorio diario",
+        schedule: { at: when }
+      });
+    }
   }
   COURSES.forEach(course => {
     (data.courses[course.id]||[]).forEach(t => addTaskNotif(t, course.name));
@@ -1698,13 +1764,7 @@ async function scheduleAllNotifications(){
   data.events.forEach(ev => {
     if (ev.done || !ev.date || !ev.time) return;
     const when = new Date(`${ev.date}T${ev.time}:00`);
-    if (isNaN(when.getTime()) || when <= now) return;
-    toSchedule.push({
-      id: notifIdFor("event-" + ev.id),
-      title: "📅 " + ev.title,
-      body: (ev.location || "Evento") + " · " + ev.time,
-      schedule: { at: when }
-    });
+    addPair("event-" + ev.id, "📅 " + ev.title, (ev.location || "Evento") + " · " + ev.time, when);
   });
 
   if (!toSchedule.length) return;
@@ -2539,6 +2599,9 @@ function openTaskModal(list, task, prefillDate){
   document.getElementById("tm-recurring").classList.toggle("on", isRecurring);
   tmRecurDaysDraft = task && task.recurDays ? [...task.recurDays] : [];
   renderRecurDaysUI(isRecurring);
+  const isDailyReminder = !!(task && task.dailyReminder);
+  document.getElementById("tm-daily-reminder").classList.toggle("on", isDailyReminder);
+  document.getElementById("tm-daily-hint").style.display = isDailyReminder ? "block" : "none";
   document.getElementById("tm-delete").style.display = task ? "block" : "none";
   document.getElementById("task-modal").classList.add("show");
 }
@@ -2559,6 +2622,10 @@ document.querySelectorAll("#tm-recur-days .day-pill").forEach(el => {
     renderRecurDaysUI(true);
   });
 });
+document.getElementById("tm-daily-reminder").addEventListener("click", function(){
+  this.classList.toggle("on");
+  document.getElementById("tm-daily-hint").style.display = this.classList.contains("on") ? "block" : "none";
+});
 function closeTaskModal(){ document.getElementById("task-modal").classList.remove("show"); editingTaskRef = null; }
 
 function setSeg(containerId, val){
@@ -2572,6 +2639,11 @@ document.querySelectorAll("#set-fontscale .seg-opt").forEach(el => el.addEventLi
   setSeg("set-fontscale", el.dataset.val);
   data.fontScale = parseFloat(el.dataset.val);
   applyFontScale();
+  saveData();
+}));
+document.querySelectorAll("#set-notif-lead .seg-opt").forEach(el => el.addEventListener("click", () => {
+  setSeg("set-notif-lead", el.dataset.val);
+  data.notifLeadMinutes = parseInt(el.dataset.val, 10);
   saveData();
 }));
 document.getElementById("tm-recurring").addEventListener("click", function(){
@@ -2624,12 +2696,13 @@ document.getElementById("tm-save").addEventListener("click", () => {
   const notes = document.getElementById("tm-notes").value.trim();
   const recurring = document.getElementById("tm-recurring").classList.contains("on");
   const recurDays = recurring && tmRecurDaysDraft.length ? [...tmRecurDaysDraft].sort() : undefined;
+  const dailyReminder = document.getElementById("tm-daily-reminder").classList.contains("on");
   const subtasks = tmSubtasksDraft.filter(s => s.text.trim()).map(s => ({ id: s.id || uid(), text: s.text.trim(), done: !!s.done }));
 
   if (editingTaskRef.task){
     const t = editingTaskRef.task;
     const wasMissed = t.missed;
-    Object.assign(t, { text, due, dueTime, priority, xp, notes, subtasks, recurring, recurDays });
+    Object.assign(t, { text, due, dueTime, priority, xp, notes, subtasks, recurring, recurDays, dailyReminder });
     if (!recurring || !recurDays) delete t.recurDays; else t.recurDays = recurDays;
     if (due && wasMissed && getDueDateTime(due, dueTime) > new Date()){
       t.missed = false; t.penaltyApplied = false; t.nextSpawned = false;
@@ -2644,7 +2717,7 @@ document.getElementById("tm-save").addEventListener("click", () => {
   } else {
     const newTask = {
       id: uid(), text, due, dueTime, done: false, xpAwarded: false, missed: false, penaltyApplied: false,
-      priority, xp, notes, subtasks, recurring, recurDays, nextSpawned: false
+      priority, xp, notes, subtasks, recurring, recurDays, dailyReminder, nextSpawned: false
     };
     if (recurring) newTask.seriesId = newTask.id;
     if (subtasks.length) data.stats.tasksWithSubtasksCreated = (data.stats.tasksWithSubtasksCreated || 0) + 1;
@@ -2855,6 +2928,12 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
       r.textContent = "🔁 Semanal";
     }
     badges.appendChild(r);
+  }
+  if (task.dailyReminder){
+    const dr = document.createElement("span");
+    dr.className = "recur-tag";
+    dr.textContent = "🔔 Diario";
+    badges.appendChild(dr);
   }
   if (task.subtasks && task.subtasks.length){
     const sc = task.subtasks.filter(s=>s.done).length;
@@ -3481,6 +3560,7 @@ function renderSettings(){
   document.getElementById("set-notify").classList.toggle("on", data.notify);
   document.getElementById("set-light").classList.toggle("on", !!data.lightMode);
   setSeg("set-fontscale", String(data.fontScale || 1));
+  setSeg("set-notif-lead", String(data.notifLeadMinutes != null ? data.notifLeadMinutes : 15));
   refreshBackupReminder();
 
   const wrap = document.getElementById("theme-swatches");
@@ -3522,22 +3602,53 @@ document.getElementById("set-light").addEventListener("click", function(){
 });
 
 /* ---- Export / Import backup ---- */
+// Copia texto al portapapeles sin depender de plugins nativos: intenta la API
+// moderna y, si no está disponible o falla, usa el truco clásico del
+// textarea+execCommand. Es el camino más confiable dentro del WebView.
+function copyTextToClipboard(text){
+  return new Promise((resolve) => {
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(() => resolve(true)).catch(() => resolve(legacyCopyToClipboard(text)));
+    } else {
+      resolve(legacyCopyToClipboard(text));
+    }
+  });
+}
+function legacyCopyToClipboard(text){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed"; ta.style.top = "0"; ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
 document.getElementById("btn-export").addEventListener("click", async () => {
   const filename = `quest_log_backup_${todayStr()}.json`;
   const json = JSON.stringify(data, null, 2);
   if (isNativeApp()){
-    // App nativa (Capacitor): no hay "carpeta de Descargas de Chrome" a la
-    // cual bajar un blob, así que escribimos el archivo en el almacenamiento
-    // de la app y abrimos el menú nativo de "Compartir" para que el usuario
-    // lo mande a Drive, WhatsApp, Archivos, correo, etc. — lo que prefiera.
+    // Camino garantizado primero: copiar el respaldo directo al portapapeles.
+    // No depende de ningún plugin nativo, así que funciona siempre, sin
+    // importar si Filesystem/Share están bien configurados en este build.
+    const copied = await copyTextToClipboard(json);
+    // Intento adicional (mejor experiencia si funciona): abrir el menú nativo
+    // de compartir para mandarlo directo a Drive/WhatsApp/etc.
+    let shared = false;
     try{
       const { Filesystem, Directory } = window.Capacitor.Plugins;
       await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: "utf8" });
       const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
       const { Share } = window.Capacitor.Plugins;
       await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [uriResult.uri] });
-    }catch(e){
-      showReminderBanner("No se pudo generar el respaldo nativo.");
+      shared = true;
+    }catch(e){}
+    if (!shared){
+      showReminderBanner(copied
+        ? "Respaldo copiado al portapapeles. Pégalo en Notas, WhatsApp o donde prefieras guardarlo."
+        : "No se pudo generar el respaldo nativo.");
     }
   } else {
     const blob = new Blob([json], { type: "application/json" });
