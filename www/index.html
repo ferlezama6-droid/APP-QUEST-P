@@ -3535,7 +3535,7 @@ document.getElementById("btn-export").addEventListener("click", async () => {
       await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: "utf8" });
       const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
       const { Share } = window.Capacitor.Plugins;
-      await Share.share({ title: "Respaldo de Quest Log", url: uriResult.uri, dialogTitle: "Guardar o enviar tu respaldo" });
+      await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [uriResult.uri] });
     }catch(e){
       showReminderBanner("No se pudo generar el respaldo nativo.");
     }
