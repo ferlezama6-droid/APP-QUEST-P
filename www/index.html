@@ -41,7 +41,7 @@
     background: radial-gradient(900px 500px at 15% -10%, var(--panel-2) 0%, var(--bg) 55%);
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    padding: 14px 14px 40px;
+    padding: calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
@@ -139,13 +139,21 @@
   /* ---------- Hoy tab ---------- */
 
   /* ---------- Crono (Todo) stats ---------- */
-  .crono-stats{ display:flex; gap:8px; margin-bottom: 14px; }
-  .crono-stat{ flex:1; background: var(--panel); border: 1px solid var(--grid-line); border-radius: 14px; padding: 10px 6px; text-align:center; }
-  .crono-stat-num{ display:block; font-size:calc(18px * var(--font-scale, 1)); font-weight:800; }
-  .crono-stat-label{ display:block; font-size:calc(9.5px * var(--font-scale, 1)); color: var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
+  .crono-stats{ display:flex; gap:6px; margin-bottom: 14px; }
+  .crono-stat{
+    flex:1; background: var(--panel); border: 1.5px solid var(--grid-line); border-radius: 14px;
+    padding: 9px 4px; text-align:center; cursor:pointer; user-select:none; transition: border-color .15s ease, background .15s ease;
+  }
+  .crono-stat-num{ display:block; font-size:calc(16px * var(--font-scale, 1)); font-weight:800; }
+  .crono-stat-label{ display:block; font-size:calc(9px * var(--font-scale, 1)); color: var(--muted); text-transform:uppercase; letter-spacing:.3px; margin-top:2px; }
   .crono-stat.pend .crono-stat-num{ color: var(--xp); }
   .crono-stat.done .crono-stat-num{ color: var(--done); }
   .crono-stat.total .crono-stat-num{ color: var(--ink); }
+  .crono-stat.nc .crono-stat-num{ color: var(--danger); }
+  .crono-stat.pend.active{ background: var(--panel-2); border-color: var(--xp); }
+  .crono-stat.done.active{ background: var(--panel-2); border-color: var(--done); }
+  .crono-stat.total.active{ background: var(--panel-2); border-color: var(--accent); }
+  .crono-stat.nc.active{ background: var(--panel-2); border-color: var(--danger); }
 
   .hoy-group-title{ font-size:calc(10.5px * var(--font-scale, 1)); color: var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:800; margin: 14px 0 8px; }
   .hoy-group-title:first-child{ margin-top:0; }
@@ -431,7 +439,7 @@
   .task.urgent-pulse{ animation: urgentPulse 1.4s ease-in-out infinite; }
   @keyframes urgentPulse{ 0%,100%{ box-shadow: 0 0 0 0 rgba(255,77,94,0); } 50%{ box-shadow: 0 0 10px 1px rgba(255,77,94,.35); } }
   .task.missed{ opacity: .8; }
-  .task.missed .check{ background: var(--danger); border-color: var(--danger); color: #0B1220; opacity: .55; cursor: not-allowed; pointer-events: none; }
+  .task.missed .check{ background: var(--danger); border-color: var(--danger); color: #0B1220; opacity: .8; }
   .task.missed .text{ text-decoration: line-through; color: var(--danger); }
   .task .due{ font-size:calc(10.5px * var(--font-scale, 1)); color: var(--accent); margin-top: 2px; }
   .task.done .due{ color: var(--muted); }
@@ -549,7 +557,7 @@
   .modal-sheet{
     background: var(--panel); border: 1px solid var(--grid-line); border-bottom:none;
     border-radius: 20px 20px 0 0; width:100%; max-width: 560px; max-height: 88vh; overflow-y:auto;
-    padding: 18px 18px 24px; transform: translateY(30px); transition: transform .25s cubic-bezier(.2,.9,.3,1.2);
+    padding: 18px 18px calc(24px + env(safe-area-inset-bottom)); transform: translateY(30px); transition: transform .25s cubic-bezier(.2,.9,.3,1.2);
   }
   .modal-overlay.show .modal-sheet{ transform: translateY(0); }
   .modal-title{ font-size:calc(15px * var(--font-scale, 1)); font-weight: 800; margin-bottom: 14px; }
@@ -689,7 +697,7 @@
   .levelup-card .sub{ font-size:calc(12px * var(--font-scale, 1)); color: var(--muted); margin-top: 6px; }
 
   .ach-toast{
-    position: fixed; top: 14px; left: 50%; transform: translateX(-50%) translateY(-80px);
+    position: fixed; top: calc(14px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) translateY(-80px);
     background: linear-gradient(135deg, #16223A, #101A2C); border: 1px solid var(--xp);
     border-radius: 14px; padding: 10px 16px; display:flex; align-items:center; gap:10px;
     box-shadow: 0 6px 24px rgba(0,0,0,.4); z-index: 1600; max-width: 90vw;
@@ -708,7 +716,7 @@
 
   .reminder-banner{
     position: fixed; top: 0; left:0; right:0; background: var(--danger); color:#fff; font-size:calc(12.5px * var(--font-scale, 1)); font-weight:700;
-    padding: 10px 16px; text-align:center; z-index: 1700; transform: translateY(-100%); transition: transform .3s ease;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px; text-align:center; z-index: 1700; transform: translateY(-100%); transition: transform .3s ease;
   }
   .reminder-banner.show{ transform: translateY(0); }
 </style>
@@ -797,18 +805,22 @@
 
   <!-- ================= CRONOLÓGICO (todo junto, en orden de fecha) ================= -->
   <div class="view" id="view-cronologico">
-    <div class="crono-stats">
-      <div class="crono-stat pend">
+    <div class="crono-stats" id="crono-filter-bar">
+      <div class="crono-stat pend" data-filter="pendientes">
         <span class="crono-stat-num" id="crono-stat-pend">0</span>
         <span class="crono-stat-label">Pendientes</span>
       </div>
-      <div class="crono-stat done">
+      <div class="crono-stat done" data-filter="hechas">
         <span class="crono-stat-num" id="crono-stat-done">0</span>
         <span class="crono-stat-label">Hechas</span>
       </div>
-      <div class="crono-stat total">
+      <div class="crono-stat total" data-filter="total">
         <span class="crono-stat-num" id="crono-stat-total">0</span>
         <span class="crono-stat-label">Total</span>
+      </div>
+      <div class="crono-stat nc" data-filter="nc">
+        <span class="crono-stat-num" id="crono-stat-nc">0</span>
+        <span class="crono-stat-label">N/C</span>
       </div>
     </div>
     <div id="crono-list"></div>
@@ -1614,6 +1626,91 @@ function loadData(){
   }catch(e){}
   return defaultData();
 }
+/* ============================================================
+   Notificaciones locales nativas (@capacitor/local-notifications)
+   Solo hacen algo dentro de la app instalada (Capacitor nativo); en el
+   navegador normal, isNativeApp() es false y todo esto no hace nada.
+   REQUIERE en el proyecto (fuera de este archivo):
+     npm install @capacitor/local-notifications
+     npx cap sync android
+   y el permiso de notificaciones (Android 13+) que el propio plugin pide.
+   ============================================================ */
+function isNativeApp(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+async function ensureNotificationPermission(){
+  if (!isNativeApp()) return false;
+  const LocalNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LocalNotifications) return false;
+  try{
+    let perm = await LocalNotifications.checkPermissions();
+    if (perm.display !== "granted"){
+      perm = await LocalNotifications.requestPermissions();
+    }
+    return perm.display === "granted";
+  }catch(e){ return false; }
+}
+// El plugin exige IDs numéricos; convertimos el id (string) de cada tarea o
+// evento en un entero estable de 31 bits para poder cancelarla/reemplazarla
+// siempre con el mismo número.
+function notifIdFor(str){
+  let h = 0;
+  for (let i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) | 0; }
+  return Math.abs(h) % 2147483647;
+}
+// Recalcula TODAS las notificaciones desde cero: cancela lo agendado y vuelve
+// a programar solo lo pendiente con fecha y hora futuras (tareas de materias,
+// personales y eventos). Se llama sola cada vez que se guarda algo, así queda
+// sincronizado automáticamente sin que el usuario tenga que hacer nada.
+async function scheduleAllNotifications(){
+  if (!isNativeApp()) return;
+  const LocalNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LocalNotifications) return;
+  const granted = await ensureNotificationPermission();
+  if (!granted) return;
+
+  try{
+    const pending = await LocalNotifications.getPending();
+    if (pending && pending.notifications && pending.notifications.length){
+      await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+    }
+  }catch(e){}
+
+  const toSchedule = [];
+  const now = new Date();
+
+  function addTaskNotif(t, subLabel){
+    if (t.done || t.missed || !t.due || !t.dueTime) return;
+    const when = new Date(`${t.due}T${t.dueTime}:00`);
+    if (isNaN(when.getTime()) || when <= now) return;
+    toSchedule.push({
+      id: notifIdFor("task-" + t.id),
+      title: "📌 " + t.text,
+      body: subLabel + " · entrega " + t.dueTime,
+      schedule: { at: when }
+    });
+  }
+  COURSES.forEach(course => {
+    (data.courses[course.id]||[]).forEach(t => addTaskNotif(t, course.name));
+  });
+  data.personal.forEach(t => addTaskNotif(t, "Personal"));
+
+  data.events.forEach(ev => {
+    if (ev.done || !ev.date || !ev.time) return;
+    const when = new Date(`${ev.date}T${ev.time}:00`);
+    if (isNaN(when.getTime()) || when <= now) return;
+    toSchedule.push({
+      id: notifIdFor("event-" + ev.id),
+      title: "📅 " + ev.title,
+      body: (ev.location || "Evento") + " · " + ev.time,
+      schedule: { at: when }
+    });
+  });
+
+  if (!toSchedule.length) return;
+  try{ await LocalNotifications.schedule({ notifications: toSchedule }); }catch(e){}
+}
+
 function saveData(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -1635,6 +1732,7 @@ function saveData(){
       }).catch(() => {});
     }catch(e){}
   }
+  scheduleAllNotifications();
 }
 
 let data = loadData();
@@ -2668,17 +2766,16 @@ document.getElementById("cm-save").addEventListener("click", () => {
    ============================================================ */
 function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
   const li = document.createElement("li");
-  li.className = "task" + (task.done ? " done" : "") + (task.missed ? " missed" : "");
+  li.className = "task" + (task.done ? " done" : (task.missed ? " missed" : ""));
 
   const row = document.createElement("div");
   row.className = "task-row";
 
   const check = document.createElement("div");
   check.className = "check";
-  check.innerHTML = task.missed ? "&#10007;" : "&#10003;";
+  check.innerHTML = (task.missed && !task.done) ? "&#10007;" : "&#10003;";
   check.addEventListener("click", (e) => {
     e.stopPropagation();
-    if (task.missed) return;
     const rect = check.getBoundingClientRect();
     const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
     const wasDone = task.done;
@@ -2768,9 +2865,13 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
   }
   if (badges.children.length) bodyDiv.appendChild(badges);
 
-  if (task.missed){
+  if (task.missed && !task.done){
     const dueDiv = document.createElement("div");
     dueDiv.className = "due"; dueDiv.textContent = "✕ No entregada";
+    bodyDiv.appendChild(dueDiv);
+  } else if (task.missed && task.done){
+    const dueDiv = document.createElement("div");
+    dueDiv.className = "due"; dueDiv.textContent = "✓ Entregada tarde";
     bodyDiv.appendChild(dueDiv);
   } else if (task.due){
     const dueDiv = document.createElement("div");
@@ -3129,6 +3230,7 @@ function formatCronoHeader(dStr){
   return diffDays < 0 ? label + " · vencido" : label;
 }
 
+let cronoFilter = "pendientes";
 function renderCrono(){
   const container = document.getElementById("crono-list");
   container.innerHTML = "";
@@ -3136,30 +3238,44 @@ function renderCrono(){
   const items = [];
   COURSES.forEach(course => {
     (data.courses[course.id]||[]).forEach(t => {
-      items.push({ kind: "task", task: t, course, date: t.due || null, time: t.dueTime || "" });
+      items.push({ kind: "task", task: t, course, date: t.due || null, time: t.dueTime || "", done: !!t.done, missed: !!t.missed });
     });
   });
   data.personal.forEach(t => {
-    items.push({ kind: "task", task: t, course: null, date: t.due || null, time: t.dueTime || "" });
+    items.push({ kind: "task", task: t, course: null, date: t.due || null, time: t.dueTime || "", done: !!t.done, missed: !!t.missed });
   });
   data.events.forEach(ev => {
-    items.push({ kind: "event", ev, date: ev.date || null, time: ev.time || "" });
+    items.push({ kind: "event", ev, date: ev.date || null, time: ev.time || "", done: !!ev.done, missed: false });
   });
 
   const totalCount = items.length;
-  const doneCount = items.filter(it => (it.kind === "task" ? it.task.done : it.ev.done)).length;
+  const doneCount = items.filter(it => it.done).length;
+  const ncCount = items.filter(it => it.missed && !it.done).length;
   const pendCount = totalCount - doneCount;
   document.getElementById("crono-stat-pend").textContent = pendCount;
   document.getElementById("crono-stat-done").textContent = doneCount;
   document.getElementById("crono-stat-total").textContent = totalCount;
+  document.getElementById("crono-stat-nc").textContent = ncCount;
+  document.querySelectorAll("#crono-filter-bar .crono-stat").forEach(el => {
+    el.classList.toggle("active", el.dataset.filter === cronoFilter);
+  });
 
-  if (!items.length){
-    container.innerHTML = `<div class="cleared-card"><span class="emoji">🗒️</span><div class="title">Aún no tienes nada</div>Agrega tareas o eventos para verlos aquí, todos juntos y en orden.</div>`;
+  let visible = items;
+  if (cronoFilter === "pendientes") visible = items.filter(it => !it.done);
+  else if (cronoFilter === "hechas") visible = items.filter(it => it.done);
+  else if (cronoFilter === "nc") visible = items.filter(it => it.missed && !it.done);
+
+  if (!visible.length){
+    const msg = cronoFilter === "hechas" ? "Aún no has completado nada."
+      : cronoFilter === "nc" ? "No tienes tareas vencidas sin completar. 🎉"
+      : cronoFilter === "pendientes" ? "No tienes pendientes. 🎉"
+      : "Aún no tienes nada";
+    container.innerHTML = `<div class="cleared-card"><span class="emoji">🗒️</span><div class="title">${msg}</div></div>`;
     return;
   }
 
   // Cronológico: por fecha y hora. Lo que no tiene fecha se manda al final.
-  items.sort((a, b) => {
+  visible.sort((a, b) => {
     if (!a.date && !b.date) return 0;
     if (!a.date) return 1;
     if (!b.date) return -1;
@@ -3170,7 +3286,7 @@ function renderCrono(){
 
   let currentDate;
   let currentTaskList = null;
-  items.forEach(it => {
+  visible.forEach(it => {
     if (it.date !== currentDate){
       currentDate = it.date;
       currentTaskList = null;
@@ -3192,6 +3308,12 @@ function renderCrono(){
     }
   });
 }
+document.querySelectorAll("#crono-filter-bar .crono-stat").forEach(el => {
+  el.addEventListener("click", () => {
+    cronoFilter = el.dataset.filter;
+    renderCrono();
+  });
+});
 
 function renderCalendar(){
   const year = calCursor.getFullYear(), month = calCursor.getMonth();
@@ -3400,9 +3522,6 @@ document.getElementById("set-light").addEventListener("click", function(){
 });
 
 /* ---- Export / Import backup ---- */
-function isNativeApp(){
-  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-}
 document.getElementById("btn-export").addEventListener("click", async () => {
   const filename = `quest_log_backup_${todayStr()}.json`;
   const json = JSON.stringify(data, null, 2);
@@ -4586,6 +4705,7 @@ applyTheme();
 applyLightMode();
 applyFontScale();
 renderAll();
+scheduleAllNotifications();
 
 // Recuperación nativa: si la app arranca "vacía" (instalación nueva o el
 // almacenamiento del WebView se perdió) pero existe un respaldo silencioso
