@@ -1792,6 +1792,11 @@ async function ensureNotificationPermission(){
 // Sin un canal explícito con importance >= 3, Android 8+ no reproduce
 // ningún sonido. Este canal se crea una sola vez (o se actualiza si ya
 // existe) y luego cada notificación programada lo referencia.
+// El sonido "task_complete.wav" (en android/app/src/main/res/raw) es el
+// mismo tono de dos notas que playComplete() reproduce dentro de la app
+// al completar una tarea, resintetizado como archivo de audio porque
+// Android no puede reproducir un tono generado con Web Audio como sonido
+// de notificación nativa: necesita un archivo real en res/raw.
 const NOTIF_CHANNEL_ID = "quest-log-reminders";
 let notifChannelReady = false;
 async function ensureNotificationChannel(){
@@ -1803,6 +1808,7 @@ async function ensureNotificationChannel(){
       id: NOTIF_CHANNEL_ID,
       name: "Recordatorios",
       description: "Avisos de tareas y eventos próximos a vencer",
+      sound: "task_complete.wav",
       importance: 5,
       visibility: 1,
       vibration: true
