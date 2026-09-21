@@ -3937,35 +3937,45 @@ document.getElementById("btn-export").addEventListener("click", async () => {
   const filename = `quest_log_backup_${todayStr()}.json`;
   const json = JSON.stringify(data, null, 2);
   if (isNativeApp()){
-    // Camino principal: escribir el .json como archivo real en el almacenamiento
-    // propio de la app (Directory.Documents), visible desde un explorador de
-    // archivos en Android/data/<applicationId>/files/Documents. No requiere
-    // permisos de almacenamiento y siempre funciona, a diferencia de depender
-    // del cuadro de diálogo nativo de compartir.
-    let saved = false;
-    let fileUri = null;
+    // Camino principal: el plugin nativo SaveToDownloads escribe el .json
+    // directo en la carpeta pública de Descargas del teléfono (vía MediaStore,
+    // Android 10+), igual que una descarga normal desde el navegador.
+    let downloaded = false;
     try{
-      const { Filesystem, Directory } = window.Capacitor.Plugins;
-      await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: "utf8" });
-      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
-      fileUri = uriResult.uri;
-      saved = true;
+      const { SaveToDownloads } = window.Capacitor.Plugins;
+      if (SaveToDownloads){
+        await SaveToDownloads.saveText({ filename, content: json, mimeType: "application/json" });
+        downloaded = true;
+      }
     }catch(e){}
-    // Además, copia al portapapeles como respaldo extra sin costo (no afecta
-    // el resultado principal si falla).
-    await copyTextToClipboard(json);
-    if (saved){
-      showReminderBanner(`Respaldo guardado: ${filename} (en Documentos de la app). También lo copié al portapapeles.`);
-      // Ofrece compartir/enviar el archivo ya guardado, sin bloquear el éxito
-      // del guardado si el usuario cierra el cuadro o si Share falla.
-      try{
-        const { Share } = window.Capacitor.Plugins;
-        if (fileUri){
-          await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [fileUri] });
-        }
-      }catch(e){}
+
+    if (downloaded){
+      showReminderBanner(`Descargado a Descargas: ${filename}`);
     } else {
-      showReminderBanner("No se pudo guardar el archivo. Copié el respaldo al portapapeles: pégalo en Notas, WhatsApp o donde prefieras guardarlo.");
+      // Repaldo si el plugin no está disponible (Android < 10 u otro fallo):
+      // guarda el .json en el almacenamiento propio de la app (persistente,
+      // sin permisos) y ofrece compartirlo/copiarlo como alternativas.
+      let saved = false;
+      let fileUri = null;
+      try{
+        const { Filesystem, Directory } = window.Capacitor.Plugins;
+        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: "utf8" });
+        const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
+        fileUri = uriResult.uri;
+        saved = true;
+      }catch(e){}
+      await copyTextToClipboard(json);
+      if (saved){
+        showReminderBanner(`No se pudo usar Descargas; guardé el respaldo en Documentos de la app: ${filename}. También lo copié al portapapeles.`);
+        try{
+          const { Share } = window.Capacitor.Plugins;
+          if (fileUri){
+            await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [fileUri] });
+          }
+        }catch(e){}
+      } else {
+        showReminderBanner("No se pudo guardar el archivo. Copié el respaldo al portapapeles: pégalo en Notas, WhatsApp o donde prefieras guardarlo.");
+      }
     }
   } else {
     const blob = new Blob([json], { type: "application/json" });
