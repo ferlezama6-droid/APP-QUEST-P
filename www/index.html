@@ -1787,6 +1787,29 @@ async function ensureNotificationPermission(){
     return perm.display === "granted";
   }catch(e){ return false; }
 }
+// En Android 8+ el sonido de una notificación ya no se puede fijar por
+// notificación individual: depende del canal (channelId) al que pertenece.
+// Sin un canal explícito con importance >= 3, Android 8+ no reproduce
+// ningún sonido. Este canal se crea una sola vez (o se actualiza si ya
+// existe) y luego cada notificación programada lo referencia.
+const NOTIF_CHANNEL_ID = "quest-log-reminders";
+let notifChannelReady = false;
+async function ensureNotificationChannel(){
+  if (notifChannelReady) return;
+  const LocalNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LocalNotifications || !LocalNotifications.createChannel) return;
+  try{
+    await LocalNotifications.createChannel({
+      id: NOTIF_CHANNEL_ID,
+      name: "Recordatorios",
+      description: "Avisos de tareas y eventos próximos a vencer",
+      importance: 5,
+      visibility: 1,
+      vibration: true
+    });
+    notifChannelReady = true;
+  }catch(e){}
+}
 // El plugin exige IDs numéricos; convertimos el id (string) de cada tarea o
 // evento en un entero estable de 31 bits para poder cancelarla/reemplazarla
 // siempre con el mismo número.
@@ -1810,6 +1833,7 @@ async function scheduleAllNotifications(){
   if (!LocalNotifications) return;
   const granted = await ensureNotificationPermission();
   if (!granted) return;
+  await ensureNotificationChannel();
 
   try{
     const pending = await LocalNotifications.getPending();
@@ -1834,7 +1858,8 @@ async function scheduleAllNotifications(){
           id: notifIdFor(idBase + "-lead"),
           title: "⏰ " + title,
           body: subLabel + " · vence " + formatLeadText(leadMin),
-          schedule: { at: leadWhen }
+          schedule: { at: leadWhen },
+          channelId: NOTIF_CHANNEL_ID
         });
       }
     }
@@ -1842,7 +1867,8 @@ async function scheduleAllNotifications(){
       id: notifIdFor(idBase + "-due"),
       title: title,
       body: subLabel,
-      schedule: { at: when }
+      schedule: { at: when },
+      channelId: NOTIF_CHANNEL_ID
     });
   }
 
@@ -1871,7 +1897,8 @@ async function scheduleAllNotifications(){
         id: notifIdFor("task-" + t.id + "-daily-" + i),
         title: "🔔 " + t.text,
         body: subLabel + " · recordatorio diario",
-        schedule: { at: when }
+        schedule: { at: when },
+        channelId: NOTIF_CHANNEL_ID
       });
     }
   }
