@@ -3937,25 +3937,35 @@ document.getElementById("btn-export").addEventListener("click", async () => {
   const filename = `quest_log_backup_${todayStr()}.json`;
   const json = JSON.stringify(data, null, 2);
   if (isNativeApp()){
-    // Camino garantizado primero: copiar el respaldo directo al portapapeles.
-    // No depende de ningún plugin nativo, así que funciona siempre, sin
-    // importar si Filesystem/Share están bien configurados en este build.
-    const copied = await copyTextToClipboard(json);
-    // Intento adicional (mejor experiencia si funciona): abrir el menú nativo
-    // de compartir para mandarlo directo a Drive/WhatsApp/etc.
-    let shared = false;
+    // Camino principal: escribir el .json como archivo real en el almacenamiento
+    // propio de la app (Directory.Documents), visible desde un explorador de
+    // archivos en Android/data/<applicationId>/files/Documents. No requiere
+    // permisos de almacenamiento y siempre funciona, a diferencia de depender
+    // del cuadro de diálogo nativo de compartir.
+    let saved = false;
+    let fileUri = null;
     try{
       const { Filesystem, Directory } = window.Capacitor.Plugins;
-      await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: "utf8" });
-      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-      const { Share } = window.Capacitor.Plugins;
-      await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [uriResult.uri] });
-      shared = true;
+      await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: "utf8" });
+      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
+      fileUri = uriResult.uri;
+      saved = true;
     }catch(e){}
-    if (!shared){
-      showReminderBanner(copied
-        ? "Respaldo copiado al portapapeles. Pégalo en Notas, WhatsApp o donde prefieras guardarlo."
-        : "No se pudo generar el respaldo nativo.");
+    // Además, copia al portapapeles como respaldo extra sin costo (no afecta
+    // el resultado principal si falla).
+    await copyTextToClipboard(json);
+    if (saved){
+      showReminderBanner(`Respaldo guardado: ${filename} (en Documentos de la app). También lo copié al portapapeles.`);
+      // Ofrece compartir/enviar el archivo ya guardado, sin bloquear el éxito
+      // del guardado si el usuario cierra el cuadro o si Share falla.
+      try{
+        const { Share } = window.Capacitor.Plugins;
+        if (fileUri){
+          await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [fileUri] });
+        }
+      }catch(e){}
+    } else {
+      showReminderBanner("No se pudo guardar el archivo. Copié el respaldo al portapapeles: pégalo en Notas, WhatsApp o donde prefieras guardarlo.");
     }
   } else {
     const blob = new Blob([json], { type: "application/json" });
