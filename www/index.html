@@ -31,6 +31,8 @@
     --pri-alta: #FF6B6B;
     --pri-media: #FFC24B;
     --pri-baja: #6FCF97;
+    --blue: #4F9DFF;
+    --purple: #8B7CF6;
     --font-scale: 1;
   }
 
@@ -719,20 +721,84 @@
     padding: calc(10px + env(safe-area-inset-top)) 16px 10px; text-align:center; z-index: 1700; transform: translateY(-100%); transition: transform .3s ease;
   }
   .reminder-banner.show{ transform: translateY(0); }
+
+  /* ---------- Bottom navigation (reemplaza las pestañas de arriba) ---------- */
+  body{ padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
+  .bottom-nav{
+    position: fixed; left:0; right:0; bottom:0; z-index: 900;
+    display:flex; background: var(--panel); border-top: 1px solid var(--grid-line);
+    padding: 6px calc(4px + env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) calc(4px + env(safe-area-inset-right));
+    max-width: 560px; margin: 0 auto;
+  }
+  .bnav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    padding: 5px 2px; border-radius: 10px; color: var(--muted); cursor:pointer; user-select:none;
+    transition: color .15s ease, background .15s ease;
+  }
+  .bnav-item.active{ color: var(--accent); background: var(--panel-2); }
+  .bnav-ic{ line-height:1; display:flex; align-items:center; justify-content:center; }
+  .bnav-ic svg{ width: calc(22px * var(--font-scale, 1)); height: calc(22px * var(--font-scale, 1)); display:block; }
+  .bnav-ic img{ width: calc(26px * var(--font-scale, 1)); height: calc(26px * var(--font-scale, 1)); display:block; object-fit:contain; }
+  .bnav-lbl{ font-size:calc(9px * var(--font-scale, 1)); font-weight:700; }
+
+  /* ---------- "Más" sheet ---------- */
+  .more-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 6px; }
+  .more-item{
+    position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    background: var(--panel-2); border: 1px solid var(--grid-line); border-radius: 14px; padding: 16px 6px;
+    font-size:calc(11px * var(--font-scale, 1)); font-weight:700; color: var(--ink); cursor:pointer; text-align:center;
+  }
+  .more-item .mi-ic{ display:flex; align-items:center; justify-content:center; }
+  .more-item .mi-ic svg{ width: calc(30px * var(--font-scale, 1)); height: calc(30px * var(--font-scale, 1)); display:block; }
+  .more-item .mi-ic img{ width: calc(36px * var(--font-scale, 1)); height: calc(36px * var(--font-scale, 1)); display:block; object-fit:contain; }
+
+  /* ---------- Type filter chips (dentro de Todo) ---------- */
+  .type-filter-row{ display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+  .type-chip{
+    font-size:calc(10.5px * var(--font-scale, 1)); font-weight:700; color: var(--muted);
+    background: var(--panel); border: 1px solid var(--grid-line); border-radius: 20px; padding: 6px 12px; cursor:pointer;
+  }
+  .type-chip.active{ background: var(--panel-2); color: var(--accent); border-color: var(--accent); }
+  .crono-add-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .crono-add-row .section-add-btn{ flex:1; margin-bottom:0; }
+
+  /* ---------- HUD collapse ---------- */
+  .hud-top{ cursor:pointer; }
+  .hud.collapsed .xp-bar-wrap{ display:none; }
+  .hud.collapsed .quest-line{ display:none; }
+  .hud.collapsed .hud-nudge{ display:none; }
+  .hud-collapse-chevron{ font-size:calc(11px * var(--font-scale, 1)); color: var(--muted); flex-shrink:0; padding: 0 2px; }
+
+  /* ---------- Task card: menos saturado ---------- */
+  .type-dot{ width:8px; height:8px; border-radius:50%; flex:none; margin-top:8px; }
+  .task-extra-icons{ font-size:calc(10px * var(--font-scale, 1)); color: var(--muted); }
+  .due.tl-red{ color: var(--danger); font-weight:700; }
+  .due.tl-yellow{ color: var(--xp); font-weight:700; }
+  .due.tl-green{ color: var(--accent); }
+  .task-actions{ position:relative; }
+  .task-actions-menu{ display:none; flex-direction:column; gap:8px; align-items:center; position:absolute; top:22px; right:0; background: var(--panel-2); border: 1px solid var(--grid-line); border-radius:10px; padding:8px 6px; z-index:5; }
+  .task-actions.open .task-actions-menu{ display:flex; }
+  .more-toggle{ font-weight:800; }
+
+  /* ---------- Done / vencidas colapsables ---------- */
+  .done-toggle{
+    font-size:calc(11px * var(--font-scale, 1)); color: var(--muted); font-weight:700;
+    padding: 9px 2px; cursor:pointer; user-select:none; border-top: 1px dashed var(--grid-line); margin-top: 4px;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="mode-switch" id="mode-switch">
+  <div class="mode-switch" id="mode-switch" style="display:none;">
     <div class="mode-opt active" data-mode="tasks">📋 Tareas</div>
     <div class="mode-opt" data-mode="finance">💰 Finanzas</div>
   </div>
 
   <div id="mode-tasks">
 
-  <div class="hud">
-    <div class="hud-top">
+  <div class="hud collapsed" id="hud">
+    <div class="hud-top" id="hud-top">
       <div class="hud-title">
         <div class="badge-icon" id="badge-icon">🛡️</div>
         <div class="lvl-info">
@@ -743,11 +809,7 @@
       <div class="hud-actions">
         <div class="combo-tag" id="combo-tag">🔥 Combo x1</div>
         <div class="streak">🔥 <span id="streak-count">0</span></div>
-        <div class="icon-btn" id="search-btn">🔍</div>
-        <div class="icon-btn" id="stats-btn">📊</div>
-        <div class="icon-btn" id="history-btn">📜</div>
-        <div class="icon-btn" id="ach-btn">🏅</div>
-        <div class="icon-btn" id="settings-btn" style="position:relative;">⚙️<span class="reminder-dot" id="backup-dot"></span></div>
+        <span class="hud-collapse-chevron" id="hud-chevron">▾</span>
       </div>
     </div>
     <div class="xp-bar-wrap">
@@ -760,17 +822,12 @@
     </div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-view="hoy">🌅 Hoy</div>
-    <div class="tab" data-view="materias">📚 Materias</div>
-    <div class="tab" data-view="personal">🎯 Personal</div>
-    <div class="tab" data-view="eventos">📅 Eventos</div>
-    <div class="tab" data-view="cronologico">🗂️ Todo</div>
-    <div class="tab" data-view="calendario">🗓️ Calend.</div>
-  </div>
-
   <!-- ================= HOY ================= -->
   <div class="view active" id="view-hoy">
+    <div class="seg" id="hoy-range-switch">
+      <div class="seg-opt active" data-val="today">Hoy</div>
+      <div class="seg-opt" data-val="week">Esta semana</div>
+    </div>
     <div id="hoy-list"></div>
   </div>
 
@@ -823,6 +880,16 @@
         <span class="crono-stat-label">N/C</span>
       </div>
     </div>
+    <div class="type-filter-row" id="crono-type-bar">
+      <div class="type-chip active" data-type="todas">Todas</div>
+      <div class="type-chip" data-type="materia">📚 Materias</div>
+      <div class="type-chip" data-type="personal">🎯 Personal</div>
+      <div class="type-chip" data-type="evento">📅 Eventos</div>
+    </div>
+    <div class="crono-add-row">
+      <div class="section-add-btn" id="crono-add-personal">＋ Tarea personal</div>
+      <div class="section-add-btn" id="crono-add-event">＋ Evento</div>
+    </div>
     <div id="crono-list"></div>
   </div>
 
@@ -838,6 +905,10 @@
     <div class="hoy-group-title" id="cal-pending-title">Pendientes</div>
     <div class="flat-card">
       <div id="cal-pending-list"></div>
+    </div>
+    <div class="done-toggle" id="cal-missed-toggle" style="display:none;"></div>
+    <div class="flat-card" id="cal-missed-wrap" style="display:none;">
+      <div id="cal-missed-list"></div>
     </div>
   </div>
 
@@ -916,6 +987,54 @@
   <footer>Todo se guarda automáticamente en este dispositivo.</footer>
 </div>
 
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bnav-item active" data-view="hoy"><span class="bnav-ic">
+    <svg viewBox="0 0 64 64" style="color:var(--accent)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m8 30 24-20 24 20v23H39V38H25v15H8V30Z"/></g></svg>
+  </span><span class="bnav-lbl">Hoy</span></div>
+  <div class="bnav-item" data-view="materias"><span class="bnav-ic">
+    <svg viewBox="0 0 64 64" style="color:var(--blue)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="m10 18 22-10 22 10-22 10-22-10Z"/><path d="m14 29 18 8 18-8M14 39l18 8 18-8M14 49l18 8 18-8"/></g></svg>
+  </span><span class="bnav-lbl">Materias</span></div>
+  <div class="bnav-item" data-view="cronologico"><span class="bnav-ic">
+    <svg viewBox="0 0 64 64" style="color:var(--xp)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="13" y="12" width="38" height="44" rx="6"/><path d="M25 12v-3h14v3M21 26l4 4 7-8M21 41l4 4 7-8M37 27h8M37 42h8"/></g></svg>
+  </span><span class="bnav-lbl">Todo</span></div>
+  <div class="bnav-item" data-view="calendario"><span class="bnav-ic">
+    <svg viewBox="0 0 64 64" style="color:var(--pri-alta)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="13" width="46" height="42" rx="6"/><path d="M9 25h46M20 8v10M44 8v10"/><path d="M20 34h1M31 34h1M42 34h1M20 44h1M31 44h1M42 44h1" stroke-width="5" stroke-linecap="round"/></g></svg>
+  </span><span class="bnav-lbl">Calend.</span></div>
+  <div class="bnav-item" id="bnav-more"><span class="bnav-ic" style="position:relative;">
+    <svg viewBox="0 0 64 64" style="color:var(--muted)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 21h36M14 32h36M14 43h26"/><circle cx="50" cy="12" r="4" fill="currentColor" stroke="none"/></g></svg>
+    <span class="reminder-dot" id="backup-dot-more"></span></span><span class="bnav-lbl">Más</span></div>
+</nav>
+
+<!-- "Más" sheet: agrupa Finanzas, Buscar, Estadísticas, Historial, Logros y Ajustes -->
+<div class="modal-overlay" id="more-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Más</div>
+    <div class="more-grid">
+      <div class="more-item" id="more-finance"><span class="mi-ic">
+        <svg viewBox="0 0 64 64" style="color:var(--done)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V8a2 2 0 0 1 2-2h28a4 4 0 0 1 4 4v3H16a4 4 0 0 0-4 4v20a5 5 0 0 0 5 5h29V19H12Z"/><path d="M46 22h-9a6 6 0 0 0 0 12h9V22Z"/><circle cx="37" cy="28" r="1.5" fill="currentColor" stroke="none"/></g></svg>
+      </span><span id="more-finance-label">Finanzas</span></div>
+      <div class="more-item" id="search-btn"><span class="mi-ic">
+        <svg viewBox="0 0 64 64" style="color:var(--blue)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="26" cy="26" r="14"/><path d="m36.5 36.5 11 11"/></g></svg>
+      </span><span>Buscar</span></div>
+      <div class="more-item" id="stats-btn"><span class="mi-ic">
+        <svg viewBox="0 0 64 64" style="color:var(--accent)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 48h44"/><rect x="14" y="31" width="8" height="13" rx="2"/><rect x="28" y="22" width="8" height="22" rx="2"/><rect x="42" y="12" width="8" height="32" rx="2"/></g></svg>
+      </span><span>Estadísticas</span></div>
+      <div class="more-item" id="history-btn"><span class="mi-ic">
+        <svg viewBox="0 0 64 64" style="color:var(--purple)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8h24l8 8v17"/><path d="M40 8v10h8"/><path d="M22 25h14M22 32h10"/><circle cx="42" cy="42" r="11"/><path d="M42 36v7h5"/></g></svg>
+      </span><span>Historial</span></div>
+      <div class="more-item" id="ach-btn"><span class="mi-ic">
+        <svg viewBox="0 0 64 64" style="color:var(--xp)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12h22v8c0 10-6 17-11 19-5-2-11-9-11-19v-8Z"/><path d="M21 16h-8c0 9 4 14 11 15M43 16h8c0 9-4 14-11 15M32 39v8M23 51h18"/><path d="m32 18 2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5-3.6-3.5 5-.7Z"/></g></svg>
+      </span><span>Logros</span></div>
+      <div class="more-item" id="settings-btn"><span class="mi-ic" style="position:relative;">
+        <svg viewBox="0 0 64 64" style="color:var(--muted)"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M26 8h12l2 7 6 3 7-2 6 10-5 5v6l5 5-6 10-7-2-6 3-2 7H26l-2-7-6-3-7 2-6-10 5-5v-6l-5-5 6-10 7 2 6-3 2-7Z"/><circle cx="32" cy="34" r="9"/></g></svg>
+        <span class="reminder-dot" id="backup-dot"></span></span><span>Ajustes</span></div>
+    </div>
+    <div class="modal-actions">
+      <div class="modal-btn save" id="more-close" style="flex:1;">Cerrar</div>
+    </div>
+  </div>
+</div>
+
 <!-- Task editor modal -->
 <div class="modal-overlay" id="task-modal">
   <div class="modal-sheet">
@@ -965,13 +1084,13 @@
       <div class="day-pill" data-day="6">S</div>
       <div class="day-pill" data-day="0">D</div>
     </div>
-    <div class="recur-hint" id="tm-recur-hint" style="display:none;">Elige los días. Si no eliges ninguno, se repite cada semana el mismo día.</div>
+    <div class="recur-hint" id="tm-recur-hint" style="display:none;">Sin días elegidos = se repite semanal.</div>
 
     <div class="toggle-row">
       <div class="tlabel">🔔 Recordatorio diario</div>
       <div class="switch" id="tm-daily-reminder"></div>
     </div>
-    <div class="recur-hint" id="tm-daily-hint" style="display:none;">Te avisará todos los días a la hora de entrega hasta que la completes o venza (requiere fecha y hora, y que la app esté instalada — no en el navegador).</div>
+    <div class="recur-hint" id="tm-daily-hint" style="display:none;">Avisa cada día a la hora de entrega (necesita fecha, hora y la app instalada).</div>
 
     <div class="modal-actions">
       <div class="modal-btn danger" id="tm-delete" style="display:none;">🗑️</div>
@@ -1063,7 +1182,7 @@
       <div class="switch" id="set-vibrate"></div>
     </div>
     <div class="settings-item">
-      <div><div class="slabel">🔔 Recordatorios</div><div class="ssub">Aviso cuando algo esté por vencer (con la app abierta)</div></div>
+      <div><div class="slabel">🔔 Recordatorios</div><div class="ssub">Avisa antes de vencer (app abierta)</div></div>
       <div class="switch" id="set-notify"></div>
     </div>
     <div class="settings-item">
@@ -1084,12 +1203,12 @@
     </div>
     <div class="settings-item" style="display:block;">
       <div class="slabel">🎨 Tema de color</div>
-      <div class="ssub">Elige el color que más te guste, sin restricciones</div>
+      <div class="ssub">El que más te guste</div>
       <div class="theme-swatches" id="theme-swatches"></div>
     </div>
     <div class="settings-item" style="display:block;">
       <div class="slabel">⏰ Anticipación de notificaciones</div>
-      <div class="ssub">Además del aviso justo a la hora de entrega, recibe un recordatorio antes. Funciona aunque la app esté cerrada (requiere la app instalada, no en el navegador).</div>
+      <div class="ssub">Recordatorio extra antes de la hora (app instalada, cerrada o no)</div>
       <div class="seg" id="set-notif-lead" style="flex-wrap:wrap;">
         <div class="seg-opt" data-val="0" style="flex:1 1 28%;">Solo a la hora</div>
         <div class="seg-opt active" data-val="15" style="flex:1 1 28%;">15 min antes</div>
@@ -1100,7 +1219,7 @@
     </div>
     <div class="settings-item" style="display:block;">
       <div class="slabel">💾 Respaldo de datos</div>
-      <div class="ssub" id="backup-sub">Guarda o restaura tu progreso, tareas y eventos</div>
+      <div class="ssub" id="backup-sub">Guarda o restaura tu progreso</div>
       <div class="backup-btns">
         <div class="modal-btn save" id="btn-export" style="flex:1;">Exportar</div>
         <div class="modal-btn cancel" id="btn-import" style="flex:1;">Importar</div>
@@ -1110,7 +1229,7 @@
 
     <div class="settings-item" style="display:block; border-top: 1px dashed var(--grid-line); padding-top: 14px; margin-top: 4px;">
       <div class="slabel" style="color: var(--danger);">⚠️ Zona de peligro</div>
-      <div class="ssub">Borra tareas, eventos y tu progreso (nivel/XP/logros). No se puede deshacer.</div>
+      <div class="ssub">Borra todo. No se puede deshacer.</div>
       <button class="reset-btn" id="reset-btn" style="width:100%; border-color: var(--danger); color: var(--danger);">Borrar todos los datos</button>
     </div>
 
@@ -1668,6 +1787,35 @@ async function ensureNotificationPermission(){
     return perm.display === "granted";
   }catch(e){ return false; }
 }
+// En Android 8+ el sonido de una notificación ya no se puede fijar por
+// notificación individual: depende del canal (channelId) al que pertenece.
+// Sin un canal explícito con importance >= 3, Android 8+ no reproduce
+// ningún sonido. Este canal se crea una sola vez (o se actualiza si ya
+// existe) y luego cada notificación programada lo referencia.
+// El sonido "task_complete.wav" (en android/app/src/main/res/raw) es el
+// mismo tono de dos notas que playComplete() reproduce dentro de la app
+// al completar una tarea, resintetizado como archivo de audio porque
+// Android no puede reproducir un tono generado con Web Audio como sonido
+// de notificación nativa: necesita un archivo real en res/raw.
+const NOTIF_CHANNEL_ID = "quest-log-reminders";
+let notifChannelReady = false;
+async function ensureNotificationChannel(){
+  if (notifChannelReady) return;
+  const LocalNotifications = window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+  if (!LocalNotifications || !LocalNotifications.createChannel) return;
+  try{
+    await LocalNotifications.createChannel({
+      id: NOTIF_CHANNEL_ID,
+      name: "Recordatorios",
+      description: "Avisos de tareas y eventos próximos a vencer",
+      sound: "task_complete.wav",
+      importance: 5,
+      visibility: 1,
+      vibration: true
+    });
+    notifChannelReady = true;
+  }catch(e){}
+}
 // El plugin exige IDs numéricos; convertimos el id (string) de cada tarea o
 // evento en un entero estable de 31 bits para poder cancelarla/reemplazarla
 // siempre con el mismo número.
@@ -1691,6 +1839,7 @@ async function scheduleAllNotifications(){
   if (!LocalNotifications) return;
   const granted = await ensureNotificationPermission();
   if (!granted) return;
+  await ensureNotificationChannel();
 
   try{
     const pending = await LocalNotifications.getPending();
@@ -1715,7 +1864,8 @@ async function scheduleAllNotifications(){
           id: notifIdFor(idBase + "-lead"),
           title: "⏰ " + title,
           body: subLabel + " · vence " + formatLeadText(leadMin),
-          schedule: { at: leadWhen }
+          schedule: { at: leadWhen },
+          channelId: NOTIF_CHANNEL_ID
         });
       }
     }
@@ -1723,7 +1873,8 @@ async function scheduleAllNotifications(){
       id: notifIdFor(idBase + "-due"),
       title: title,
       body: subLabel,
-      schedule: { at: when }
+      schedule: { at: when },
+      channelId: NOTIF_CHANNEL_ID
     });
   }
 
@@ -1752,7 +1903,8 @@ async function scheduleAllNotifications(){
         id: notifIdFor("task-" + t.id + "-daily-" + i),
         title: "🔔 " + t.text,
         body: subLabel + " · recordatorio diario",
-        schedule: { at: when }
+        schedule: { at: when },
+        channelId: NOTIF_CHANNEL_ID
       });
     }
   }
@@ -1798,9 +1950,20 @@ function saveData(){
 let data = loadData();
 const openState = {};
 const subtaskOpenState = {};
+const courseDoneOpen = {};
+let hoyDoneOpen = false;
+let hoyRange = "today";
+let cronoTypeFilter = "todas";
+let calMissedOpen = false;
+let currentView = "hoy";
+let currentMode = "tasks";
 let editingTaskRef = null;
 let editingEventRef = null;
 let calCursor = new Date();
+
+// Ordena tareas por fecha/hora de entrega; sin fecha se va al final.
+function taskDateSortKey(t){ return (t.due || "9999-99-99") + " " + (t.dueTime || "99:99"); }
+function sortTasksByDate(list){ return [...list].sort((a,b) => taskDateSortKey(a).localeCompare(taskDateSortKey(b))); }
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
@@ -2565,18 +2728,114 @@ function renderNudge(p){
 }
 
 /* ============================================================
-   Tabs
+   Navegación: barra inferior + vistas
    ============================================================ */
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
-    tab.classList.add("active");
-    document.getElementById("view-" + tab.dataset.view).classList.add("active");
-    if (tab.dataset.view === "calendario") renderCalendar();
-    if (tab.dataset.view === "hoy") renderHoy();
-    if (tab.dataset.view === "cronologico") renderCrono();
+function switchView(viewName, opts){
+  opts = opts || {};
+  if (currentMode !== "tasks") switchMode("tasks", { skipHistory: true });
+  currentView = viewName;
+  document.querySelectorAll(".bnav-item[data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === viewName));
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById("view-" + viewName).classList.add("active");
+  if (viewName === "calendario") renderCalendar();
+  if (viewName === "hoy") renderHoy();
+  if (viewName === "cronologico") renderCrono();
+  if (!opts.skipHistory) pushNavState();
+}
+document.querySelectorAll(".bnav-item[data-view]").forEach(btn => {
+  btn.addEventListener("click", () => switchView(btn.dataset.view));
+});
+
+/* ---- "Más" sheet ---- */
+function openMoreSheet(){
+  document.getElementById("more-finance-label").textContent = currentMode === "finance" ? "Tareas" : "Finanzas";
+  document.getElementById("more-modal").classList.add("show");
+  pushNavState();
+}
+function closeMoreSheet(){ document.getElementById("more-modal").classList.remove("show"); }
+document.getElementById("bnav-more").addEventListener("click", openMoreSheet);
+document.getElementById("more-close").addEventListener("click", closeMoreSheet);
+document.getElementById("more-modal").addEventListener("click", (e) => { if (e.target.id === "more-modal") closeMoreSheet(); });
+document.getElementById("more-finance").addEventListener("click", () => { closeMoreSheet(); switchMode(currentMode === "finance" ? "tasks" : "finance"); });
+// Buscar/Estadísticas/Historial/Logros/Ajustes conservan sus ids originales
+// (search-btn, stats-btn, history-btn, ach-btn, settings-btn) — solo se
+// movieron visualmente al sheet "Más" — así que sus propios listeners (más
+// abajo en el archivo) siguen abriendo cada modal; aquí solo cerramos el
+// sheet primero para que el modal que corresponde quede encima.
+["search-btn","stats-btn","history-btn","ach-btn","settings-btn"].forEach(id => {
+  document.getElementById(id).addEventListener("click", closeMoreSheet);
+});
+
+/* ---- HUD colapsable ---- */
+document.getElementById("hud-top").addEventListener("click", () => {
+  const hud = document.getElementById("hud");
+  hud.classList.toggle("collapsed");
+  document.getElementById("hud-chevron").textContent = hud.classList.contains("collapsed") ? "▾" : "▴";
+});
+
+/* ---- Hoy: Hoy / Esta semana ---- */
+document.querySelectorAll("#hoy-range-switch .seg-opt").forEach(opt => {
+  opt.addEventListener("click", () => {
+    document.querySelectorAll("#hoy-range-switch .seg-opt").forEach(o => o.classList.remove("active"));
+    opt.classList.add("active");
+    hoyRange = opt.dataset.val;
+    renderHoy();
   });
+});
+
+/* ---- Todo: filtro por tipo + accesos rápidos ---- */
+document.querySelectorAll("#crono-type-bar .type-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    cronoTypeFilter = chip.dataset.type;
+    document.querySelectorAll("#crono-type-bar .type-chip").forEach(c => c.classList.toggle("active", c === chip));
+    renderCrono();
+  });
+});
+document.getElementById("crono-add-personal").addEventListener("click", () => openTaskModal(data.personal, null));
+document.getElementById("crono-add-event").addEventListener("click", () => openEventModal(null));
+
+// Cierra el menú "⋮" de una tarea si se toca fuera de él.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".task-actions")){
+    document.querySelectorAll(".task-actions.open").forEach(a => a.classList.remove("open"));
+  }
+});
+
+/* ============================================================
+   Botón atrás (hardware Android / gesto del navegador)
+   ============================================================ */
+function pushNavState(){ try{ history.pushState({ t: Date.now() }, ""); }catch(e){} }
+
+function anyOverlayOpen(){
+  return document.querySelector(".modal-overlay.show, .ritual-overlay.show, .levelup-overlay.show");
+}
+function handleHardwareBack(){
+  const openOverlay = anyOverlayOpen();
+  if (openOverlay){ openOverlay.classList.remove("show"); return true; }
+  if (currentMode === "finance"){ switchMode("tasks", { skipHistory: true }); return true; }
+  if (currentView !== "hoy"){ switchView("hoy", { skipHistory: true }); return true; }
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.Capacitor.Plugins && window.Capacitor.Plugins.App){
+    window.Capacitor.Plugins.App.exitApp();
+    return true;
+  }
+  return false;
+}
+window.addEventListener("popstate", () => { handleHardwareBack(); });
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App){
+  window.Capacitor.Plugins.App.addListener("backButton", () => { handleHardwareBack(); });
+}
+// Estado base para que siempre haya algo a lo que "volver" con el gesto/botón atrás.
+pushNavState();
+// Cualquier modal que se abra (clic directo en los botones que quedaron dentro
+// del sheet "Más", o los que abren desde una tarjeta) deja una entrada en el
+// historial, así el botón atrás la cierra en vez de salir de la app.
+document.querySelectorAll(".modal-overlay").forEach(ov => {
+  const obs = new MutationObserver(muts => {
+    muts.forEach(m => {
+      if (m.attributeName === "class" && ov.classList.contains("show")) pushNavState();
+    });
+  });
+  obs.observe(ov, { attributes: true });
 });
 
 /* ============================================================
@@ -2894,56 +3153,44 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
   textDiv.textContent = task.text;
   bodyDiv.appendChild(textDiv);
 
+  // Tipo de tarea: un punto de color en vez de una pastilla de texto —
+  // se distingue de un vistazo (mismo color que usa el calendario) sin ocupar espacio.
+  let typeDot = null;
+  if (showSubjectTag){
+    const course = courseCtx ? COURSES.find(c => c.id === courseCtx) : null;
+    typeDot = document.createElement("span");
+    typeDot.className = "type-dot";
+    typeDot.style.background = course ? course.color : "#7C8AA8";
+    typeDot.title = course ? course.name : "Personal";
+  }
+
+  // Máximo 2 badges visibles (prioridad + repetir/recordatorio/subtareas
+  // como iconos simples, sin pastilla) para que la tarjeta no se vea cargada.
   const badges = document.createElement("div");
   badges.className = "task-badges";
-  if (showSubjectTag){
-    const subj = document.createElement("span");
-    const course = courseCtx ? COURSES.find(c => c.id === courseCtx) : null;
-    subj.className = "course-tag" + (course ? "" : " personal-tag");
-    if (course){
-      subj.style.background = course.color + "29";
-      subj.style.color = course.color;
-      subj.textContent = course.name;
-    } else {
-      subj.textContent = "🎯 Personal";
-    }
-    subj.title = course ? course.name : "Personal";
-    badges.appendChild(subj);
-  }
   if (task.priority){
     const p = document.createElement("span");
     p.className = "pri-tag pri-" + task.priority;
     p.textContent = task.priority === "alta" ? "🔺 Alta" : task.priority === "media" ? "◆ Media" : "▽ Baja";
     badges.appendChild(p);
   }
-  if (task.recurring){
-    const r = document.createElement("span");
-    r.className = "recur-tag";
-    if (task.recurDays && task.recurDays.length){
-      const DAY_LABELS = { 0:"D", 1:"L", 2:"M", 3:"M", 4:"J", 5:"V", 6:"S" };
-      const order = [1,2,3,4,5,6,0];
-      const label = order.filter(d => task.recurDays.includes(d)).map(d => DAY_LABELS[d]).join("-");
-      r.textContent = "🔁 " + label;
-    } else {
-      r.textContent = "🔁 Semanal";
-    }
-    badges.appendChild(r);
-  }
-  if (task.dailyReminder){
-    const dr = document.createElement("span");
-    dr.className = "recur-tag";
-    dr.textContent = "🔔 Diario";
-    badges.appendChild(dr);
-  }
+  const extraIcons = [];
+  if (task.recurring) extraIcons.push("🔁");
+  if (task.dailyReminder) extraIcons.push("🔔");
   if (task.subtasks && task.subtasks.length){
     const sc = task.subtasks.filter(s=>s.done).length;
-    const st = document.createElement("span");
-    st.className = "subtask-progress";
-    st.textContent = `☑ ${sc}/${task.subtasks.length}`;
-    badges.appendChild(st);
+    extraIcons.push(`☑${sc}/${task.subtasks.length}`);
+  }
+  if (extraIcons.length){
+    const ex = document.createElement("span");
+    ex.className = "task-extra-icons";
+    ex.textContent = extraIcons.join(" ");
+    ex.title = "Repetir / recordatorio diario / subtareas";
+    badges.appendChild(ex);
   }
   if (badges.children.length) bodyDiv.appendChild(badges);
 
+  // Fecha y urgencia fusionadas en una sola línea (antes salían duplicadas).
   if (task.missed && !task.done){
     const dueDiv = document.createElement("div");
     dueDiv.className = "due"; dueDiv.textContent = "✕ No entregada";
@@ -2954,20 +3201,17 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
     bodyDiv.appendChild(dueDiv);
   } else if (task.due){
     const dueDiv = document.createElement("div");
-    dueDiv.className = "due";
     const [y,m,d] = task.due.split("-");
-    let txt = `Entrega: ${d}/${m}/${y}`;
-    if (task.dueTime) txt += ` · ${task.dueTime}`;
-    dueDiv.textContent = txt;
-    bodyDiv.appendChild(dueDiv);
-
+    let txt = `${d}/${m}` + (task.dueTime ? ` · ${task.dueTime}` : "");
     const timeLeft = getTimeLeftInfo(task.due, task.dueTime, task.done, task.missed);
     if (timeLeft){
-      const tag = document.createElement("div");
-      tag.className = "time-tag " + timeLeftClass(timeLeft.hoursLeft);
-      tag.textContent = formatTimeLeft(timeLeft.hoursLeft);
-      bodyDiv.appendChild(tag);
+      txt += ` · ${formatTimeLeft(timeLeft.hoursLeft)}`;
+      dueDiv.className = "due " + timeLeftClass(timeLeft.hoursLeft);
+    } else {
+      dueDiv.className = "due";
     }
+    dueDiv.textContent = txt;
+    bodyDiv.appendChild(dueDiv);
     applyUrgencyStyle(li, getUrgency(task.due, task.dueTime, task.done, task.missed));
   }
 
@@ -2977,21 +3221,36 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
     bodyDiv.appendChild(notesEl);
   }
 
+  // Acciones secundarias agrupadas bajo un solo botón "⋮" (antes eran 4
+  // iconos siempre visibles); completar sigue siendo el check y editar
+  // sigue estando a un toque en el cuerpo de la tarea.
   const actions = document.createElement("div");
   actions.className = "task-actions";
+  const moreBtn = document.createElement("div");
+  moreBtn.className = "mini-btn more-toggle"; moreBtn.innerHTML = "&#8942;";
+  moreBtn.title = "Más acciones";
+  moreBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    document.querySelectorAll(".task-actions.open").forEach(a => { if (a !== actions) a.classList.remove("open"); });
+    actions.classList.toggle("open");
+  });
+  const menu = document.createElement("div");
+  menu.className = "task-actions-menu";
   const focusBtn = document.createElement("div");
   focusBtn.className = "mini-btn"; focusBtn.innerHTML = "&#9201;";
   focusBtn.title = "Modo enfoque";
-  focusBtn.addEventListener("click", (e) => { e.stopPropagation(); openFocusModal(task.text); });
+  focusBtn.addEventListener("click", (e) => { e.stopPropagation(); actions.classList.remove("open"); openFocusModal(task.text); });
   const shareBtn = document.createElement("div");
   shareBtn.className = "mini-btn"; shareBtn.innerHTML = "&#8683;";
   shareBtn.title = "Compartir";
-  shareBtn.addEventListener("click", (e) => { e.stopPropagation(); shareItem(task.text, task.due, task.dueTime); });
+  shareBtn.addEventListener("click", (e) => { e.stopPropagation(); actions.classList.remove("open"); shareItem(task.text, task.due, task.dueTime); });
   const editBtn = document.createElement("div");
   editBtn.className = "mini-btn"; editBtn.innerHTML = "&#9998;";
-  editBtn.addEventListener("click", (e) => { e.stopPropagation(); openTaskModal(currentListFor(task), task); });
+  editBtn.title = "Editar";
+  editBtn.addEventListener("click", (e) => { e.stopPropagation(); actions.classList.remove("open"); openTaskModal(currentListFor(task), task); });
   const del = document.createElement("div");
   del.className = "mini-btn del"; del.innerHTML = "&times;";
+  del.title = "Eliminar";
   del.addEventListener("click", (e) => {
     e.stopPropagation();
     reverseItemXp(task);
@@ -3000,11 +3259,14 @@ function buildTaskItem(task, onChange, courseCtx, showSubjectTag){
     if (idx > -1) list.splice(idx, 1);
     saveData(); onChange();
   });
-  actions.appendChild(focusBtn);
-  actions.appendChild(shareBtn);
-  actions.appendChild(editBtn);
-  actions.appendChild(del);
+  menu.appendChild(focusBtn);
+  menu.appendChild(shareBtn);
+  menu.appendChild(editBtn);
+  menu.appendChild(del);
+  actions.appendChild(moreBtn);
+  actions.appendChild(menu);
 
+  if (typeDot) row.appendChild(typeDot);
   row.appendChild(check);
   row.appendChild(bodyDiv);
   row.appendChild(actions);
@@ -3114,7 +3376,19 @@ function renderCourses(){
       note.className = "empty-note"; note.textContent = "Sin tareas todavía.";
       list.appendChild(note);
     } else {
-      tasks.forEach(task => list.appendChild(buildTaskItem(task, renderCourses, course.id)));
+      // Pendientes ordenadas por fecha arriba; hechas colapsadas abajo.
+      const pendingTasks = sortTasksByDate(tasks.filter(t => !t.done));
+      const doneTasks = sortTasksByDate(tasks.filter(t => t.done));
+      pendingTasks.forEach(task => list.appendChild(buildTaskItem(task, renderCourses, course.id)));
+      if (doneTasks.length){
+        const isOpen = !!courseDoneOpen[course.id];
+        const toggle = document.createElement("li");
+        toggle.className = "done-toggle";
+        toggle.textContent = (isOpen ? "▾ Ocultar " : "▸ Ver ") + `${doneTasks.length} completada${doneTasks.length>1?"s":""}`;
+        toggle.addEventListener("click", () => { courseDoneOpen[course.id] = !courseDoneOpen[course.id]; renderCourses(); });
+        list.appendChild(toggle);
+        if (isOpen) doneTasks.forEach(task => list.appendChild(buildTaskItem(task, renderCourses, course.id)));
+      }
     }
     body.appendChild(list);
 
@@ -3314,7 +3588,7 @@ function renderCrono(){
   const container = document.getElementById("crono-list");
   container.innerHTML = "";
 
-  const items = [];
+  let items = [];
   COURSES.forEach(course => {
     (data.courses[course.id]||[]).forEach(t => {
       items.push({ kind: "task", task: t, course, date: t.due || null, time: t.dueTime || "", done: !!t.done, missed: !!t.missed });
@@ -3327,10 +3601,18 @@ function renderCrono(){
     items.push({ kind: "event", ev, date: ev.date || null, time: ev.time || "", done: !!ev.done, missed: false });
   });
 
+  // Filtro por tipo (Materias / Personal / Eventos) — Personal y Eventos ya
+  // no tienen su propia pestaña, viven aquí como filtro.
+  document.querySelectorAll("#crono-type-bar .type-chip").forEach(c => c.classList.toggle("active", c.dataset.type === cronoTypeFilter));
+  if (cronoTypeFilter === "materia") items = items.filter(it => it.kind === "task" && it.course);
+  else if (cronoTypeFilter === "personal") items = items.filter(it => it.kind === "task" && !it.course);
+  else if (cronoTypeFilter === "evento") items = items.filter(it => it.kind === "event");
+
   const totalCount = items.length;
   const doneCount = items.filter(it => it.done).length;
   const ncCount = items.filter(it => it.missed && !it.done).length;
-  const pendCount = totalCount - doneCount;
+  // "Pendientes" ya NO incluye las vencidas — esas viven aparte, en N/C.
+  const pendCount = items.filter(it => !it.done && !it.missed).length;
   document.getElementById("crono-stat-pend").textContent = pendCount;
   document.getElementById("crono-stat-done").textContent = doneCount;
   document.getElementById("crono-stat-total").textContent = totalCount;
@@ -3340,7 +3622,7 @@ function renderCrono(){
   });
 
   let visible = items;
-  if (cronoFilter === "pendientes") visible = items.filter(it => !it.done);
+  if (cronoFilter === "pendientes") visible = items.filter(it => !it.done && !it.missed);
   else if (cronoFilter === "hechas") visible = items.filter(it => it.done);
   else if (cronoFilter === "nc") visible = items.filter(it => it.missed && !it.done);
 
@@ -3453,7 +3735,9 @@ function renderCalendar(){
 
 // Todas las tareas y eventos aún no completados, sin importar el mes que se
 // esté viendo en la cuadrícula, ordenados por fecha/hora (los sin fecha van al final).
-function collectAllPendingItems(monthOnly){
+// onlyMissed=false (por defecto): pendientes sin contar vencidas.
+// onlyMissed=true: solo las vencidas, para la lista aparte y colapsada.
+function collectAllPendingItems(monthOnly, onlyMissed){
   const items = [];
   const y = calCursor.getFullYear(), m = calCursor.getMonth();
   const inMonth = (dateStr) => {
@@ -3461,17 +3745,20 @@ function collectAllPendingItems(monthOnly){
     const d = new Date(dateStr + "T00:00:00");
     return d.getFullYear() === y && d.getMonth() === m;
   };
+  const wanted = (t) => onlyMissed ? !!t.missed : !t.missed;
   COURSES.forEach(course => {
     (data.courses[course.id]||[]).forEach(t => {
-      if (!t.done && (!monthOnly || inMonth(t.due))) items.push({ type: "task", color: course.color, label: t.text, sub: course.name, time: t.dueTime, date: t.due || null, missed: t.missed });
+      if (!t.done && wanted(t) && (!monthOnly || inMonth(t.due))) items.push({ type: "task", color: course.color, label: t.text, sub: course.name, time: t.dueTime, date: t.due || null, missed: t.missed });
     });
   });
   data.personal.forEach(t => {
-    if (!t.done && (!monthOnly || inMonth(t.due))) items.push({ type: "task", color: "#7C8AA8", label: t.text, sub: "Personal", time: t.dueTime, date: t.due || null, missed: t.missed });
+    if (!t.done && wanted(t) && (!monthOnly || inMonth(t.due))) items.push({ type: "task", color: "#7C8AA8", label: t.text, sub: "Personal", time: t.dueTime, date: t.due || null, missed: t.missed });
   });
-  data.events.forEach(ev => {
-    if (!ev.done && (!monthOnly || inMonth(ev.date))) items.push({ type: "event", color: "#34D6C4", label: ev.title, sub: ev.location || "Evento", time: ev.time, date: ev.date || null, missed: false });
-  });
+  if (!onlyMissed){
+    data.events.forEach(ev => {
+      if (!ev.done && (!monthOnly || inMonth(ev.date))) items.push({ type: "event", color: "#34D6C4", label: ev.title, sub: ev.location || "Evento", time: ev.time, date: ev.date || null, missed: false });
+    });
+  }
   items.sort((a,b) => {
     if (!a.date && !b.date) return 0;
     if (!a.date) return 1;
@@ -3483,17 +3770,12 @@ function collectAllPendingItems(monthOnly){
   return items;
 }
 
-function renderCalendarPendingList(){
-  const container = document.getElementById("cal-pending-list");
+// Dibuja una lista de items agrupados por fecha — la usan tanto la lista de
+// pendientes del mes como la de vencidas (colapsada).
+function renderItemsGroupedByDate(container, items, emptyMsg){
   container.innerHTML = "";
-  const items = collectAllPendingItems(true);
-  const titleEl = document.getElementById("cal-pending-title");
-  if (titleEl){
-    const monthLabel = calCursor.toLocaleDateString("es-ES", { month: "long" });
-    titleEl.textContent = "Pendientes de " + monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-  }
   if (!items.length){
-    container.innerHTML = `<div class="empty-note">No tienes pendientes este mes. 🎉</div>`;
+    if (emptyMsg) container.innerHTML = `<div class="empty-note">${emptyMsg}</div>`;
     return;
   }
   let currentDate;
@@ -3534,6 +3816,31 @@ function renderCalendarPendingList(){
     row.appendChild(dot); row.appendChild(body);
     container.appendChild(row);
   });
+}
+
+function renderCalendarPendingList(){
+  const items = collectAllPendingItems(true, false);
+  const titleEl = document.getElementById("cal-pending-title");
+  if (titleEl){
+    const monthLabel = calCursor.toLocaleDateString("es-ES", { month: "long" });
+    titleEl.textContent = "Pendientes de " + monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+  }
+  renderItemsGroupedByDate(document.getElementById("cal-pending-list"), items, "No tienes pendientes este mes. 🎉");
+
+  // Vencidas: aparte y colapsadas, para no mezclarlas con "pendientes".
+  const missed = collectAllPendingItems(true, true);
+  const toggle = document.getElementById("cal-missed-toggle");
+  const wrap = document.getElementById("cal-missed-wrap");
+  if (!missed.length){
+    toggle.style.display = "none";
+    wrap.style.display = "none";
+    return;
+  }
+  toggle.style.display = "block";
+  toggle.textContent = (calMissedOpen ? "▾ Ocultar " : "▸ Ver ") + `${missed.length} vencida${missed.length>1?"s":""} este mes`;
+  toggle.onclick = () => { calMissedOpen = !calMissedOpen; renderCalendarPendingList(); };
+  wrap.style.display = calMissedOpen ? "block" : "none";
+  if (calMissedOpen) renderItemsGroupedByDate(document.getElementById("cal-missed-list"), missed, "");
 }
 document.getElementById("cal-prev").addEventListener("click", () => { calCursor.setMonth(calCursor.getMonth()-1); renderCalendar(); });
 document.getElementById("cal-next").addEventListener("click", () => { calCursor.setMonth(calCursor.getMonth()+1); renderCalendar(); });
@@ -3630,25 +3937,45 @@ document.getElementById("btn-export").addEventListener("click", async () => {
   const filename = `quest_log_backup_${todayStr()}.json`;
   const json = JSON.stringify(data, null, 2);
   if (isNativeApp()){
-    // Camino garantizado primero: copiar el respaldo directo al portapapeles.
-    // No depende de ningún plugin nativo, así que funciona siempre, sin
-    // importar si Filesystem/Share están bien configurados en este build.
-    const copied = await copyTextToClipboard(json);
-    // Intento adicional (mejor experiencia si funciona): abrir el menú nativo
-    // de compartir para mandarlo directo a Drive/WhatsApp/etc.
-    let shared = false;
+    // Camino principal: el plugin nativo SaveToDownloads escribe el .json
+    // directo en la carpeta pública de Descargas del teléfono (vía MediaStore,
+    // Android 10+), igual que una descarga normal desde el navegador.
+    let downloaded = false;
     try{
-      const { Filesystem, Directory } = window.Capacitor.Plugins;
-      await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Cache, encoding: "utf8" });
-      const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
-      const { Share } = window.Capacitor.Plugins;
-      await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [uriResult.uri] });
-      shared = true;
+      const { SaveToDownloads } = window.Capacitor.Plugins;
+      if (SaveToDownloads){
+        await SaveToDownloads.saveText({ filename, content: json, mimeType: "application/json" });
+        downloaded = true;
+      }
     }catch(e){}
-    if (!shared){
-      showReminderBanner(copied
-        ? "Respaldo copiado al portapapeles. Pégalo en Notas, WhatsApp o donde prefieras guardarlo."
-        : "No se pudo generar el respaldo nativo.");
+
+    if (downloaded){
+      showReminderBanner(`Descargado a Descargas: ${filename}`);
+    } else {
+      // Repaldo si el plugin no está disponible (Android < 10 u otro fallo):
+      // guarda el .json en el almacenamiento propio de la app (persistente,
+      // sin permisos) y ofrece compartirlo/copiarlo como alternativas.
+      let saved = false;
+      let fileUri = null;
+      try{
+        const { Filesystem, Directory } = window.Capacitor.Plugins;
+        await Filesystem.writeFile({ path: filename, data: json, directory: Directory.Documents, encoding: "utf8" });
+        const uriResult = await Filesystem.getUri({ path: filename, directory: Directory.Documents });
+        fileUri = uriResult.uri;
+        saved = true;
+      }catch(e){}
+      await copyTextToClipboard(json);
+      if (saved){
+        showReminderBanner(`No se pudo usar Descargas; guardé el respaldo en Documentos de la app: ${filename}. También lo copié al portapapeles.`);
+        try{
+          const { Share } = window.Capacitor.Plugins;
+          if (fileUri){
+            await Share.share({ title: "Respaldo de Quest Log", text: "Respaldo de Quest Log", dialogTitle: "Guardar o enviar tu respaldo", files: [fileUri] });
+          }
+        }catch(e){}
+      } else {
+        showReminderBanner("No se pudo guardar el archivo. Copié el respaldo al portapapeles: pégalo en Notas, WhatsApp o donde prefieras guardarlo.");
+      }
     }
   } else {
     const blob = new Blob([json], { type: "application/json" });
@@ -3980,10 +4307,35 @@ function getWeekRange(){
   return { monday, sunday };
 }
 
+function itemTime(it){ return (it.kind === "task" ? it.task.dueTime : it.ev.time) || "99:99"; }
+function itemDone(it){ return it.kind === "task" ? it.task.done : it.ev.done; }
+
+// Dibuja tareas y eventos intercalados por hora (antes salían las tareas
+// todas juntas y los eventos hasta el final, sin importar la hora de cada uno).
+function renderHoyGroup(container, title, items){
+  if (!items.length) return;
+  if (title){
+    const h = document.createElement("div");
+    h.className = "hoy-group-title"; h.textContent = title;
+    container.appendChild(h);
+  }
+  const sorted = [...items].sort((a,b) => itemTime(a).localeCompare(itemTime(b)));
+  let curList = null;
+  sorted.forEach(it => {
+    if (it.kind === "task"){
+      if (!curList){ curList = document.createElement("ul"); curList.className = "task-list"; container.appendChild(curList); }
+      curList.appendChild(buildTaskItem(it.task, renderHoy, it.course ? it.course.id : null, true));
+    } else {
+      curList = null;
+      container.appendChild(buildEventCard(it.ev, renderHoy));
+    }
+  });
+}
+
 function renderHoy(){
+  if (hoyRange === "week") { renderHoyWeek(); return; }
   const today = todayStr();
 
-  // today's items
   const container = document.getElementById("hoy-list");
   container.innerHTML = "";
   const todayItems = [];
@@ -4005,35 +4357,79 @@ function renderHoy(){
     return;
   }
 
-  const allDone = todayItems.every(it => it.kind === "task" ? it.task.done : it.ev.done);
+  const allDone = todayItems.every(it => itemDone(it));
   if (allDone){
     container.innerHTML = `<div class="cleared-card"><span class="emoji">✅</span><div class="title">¡Todo listo por hoy!</div>Completaste ${todayItems.length} pendiente${todayItems.length>1?"s":""}. Buen trabajo.</div>`;
-    checkDayCleared(todayItems.map(it => ({ done: it.kind === "task" ? it.task.done : it.ev.done })));
+    checkDayCleared(todayItems.map(it => ({ done: itemDone(it) })));
     return;
   }
 
-  const pending = todayItems.filter(it => !(it.kind === "task" ? it.task.done : it.ev.done));
-  const done = todayItems.filter(it => (it.kind === "task" ? it.task.done : it.ev.done));
+  const pending = todayItems.filter(it => !itemDone(it));
+  const done = todayItems.filter(it => itemDone(it));
 
-  function renderGroup(title, items){
-    if (!items.length) return;
-    const h = document.createElement("div");
-    h.className = "hoy-group-title"; h.textContent = title;
-    container.appendChild(h);
-    const list = document.createElement("ul");
-    list.className = "task-list";
-    items.forEach(it => {
-      if (it.kind === "task"){
-        list.appendChild(buildTaskItem(it.task, renderHoy, it.course ? it.course.id : null, true));
-      }
-    });
-    container.appendChild(list);
-    items.filter(it => it.kind === "event").forEach(it => container.appendChild(buildEventCard(it.ev, renderHoy)));
+  renderHoyGroup(container, "Pendientes hoy", pending);
+  if (done.length){
+    const toggle = document.createElement("div");
+    toggle.className = "done-toggle";
+    toggle.textContent = (hoyDoneOpen ? "▾ Ocultar " : "▸ Ver ") + `${done.length} completada${done.length>1?"s":""} hoy`;
+    toggle.addEventListener("click", () => { hoyDoneOpen = !hoyDoneOpen; renderHoy(); });
+    container.appendChild(toggle);
+    if (hoyDoneOpen) renderHoyGroup(container, "", done);
   }
-  renderGroup("Pendientes hoy", pending);
-  renderGroup("Completadas hoy", done);
 
-  checkDayCleared(todayItems.map(it => ({ done: it.kind === "task" ? it.task.done : it.ev.done })));
+  checkDayCleared(todayItems.map(it => ({ done: itemDone(it) })));
+}
+
+// Vista "Esta semana": pendientes de los próximos 7 días, agrupadas por día.
+function renderHoyWeek(){
+  const container = document.getElementById("hoy-list");
+  container.innerHTML = "";
+  const start = new Date(); start.setHours(0,0,0,0);
+  const dates = [];
+  for (let i=0;i<7;i++){ const d = new Date(start); d.setDate(d.getDate()+i); dates.push(dateStr(d)); }
+
+  const items = [];
+  COURSES.forEach(course => {
+    (data.courses[course.id]||[]).forEach(t => {
+      if (!t.done && !t.missed && dates.includes(t.due)) items.push({ kind: "task", task: t, course });
+    });
+  });
+  data.personal.forEach(t => {
+    if (!t.done && !t.missed && dates.includes(t.due)) items.push({ kind: "task", task: t, course: null });
+  });
+  data.events.forEach(ev => {
+    if (!ev.done && dates.includes(ev.date)) items.push({ kind: "event", ev });
+  });
+
+  if (!items.length){
+    container.innerHTML = `<div class="cleared-card"><span class="emoji">🌤️</span><div class="title">Nada pendiente esta semana</div>Buen momento para adelantar algo.</div>`;
+    return;
+  }
+
+  items.sort((a,b) => {
+    const da = a.kind === "task" ? a.task.due : a.ev.date;
+    const db = b.kind === "task" ? b.task.due : b.ev.date;
+    const key = (d, it) => d + " " + itemTime(it);
+    return key(da, a).localeCompare(key(db, b));
+  });
+
+  let currentDate = null, curList = null;
+  items.forEach(it => {
+    const d = it.kind === "task" ? it.task.due : it.ev.date;
+    if (d !== currentDate){
+      currentDate = d; curList = null;
+      const h = document.createElement("div");
+      h.className = "hoy-group-title"; h.textContent = formatCronoHeader(d);
+      container.appendChild(h);
+    }
+    if (it.kind === "task"){
+      if (!curList){ curList = document.createElement("ul"); curList.className = "task-list"; container.appendChild(curList); }
+      curList.appendChild(buildTaskItem(it.task, renderHoy, it.course ? it.course.id : null, true));
+    } else {
+      curList = null;
+      container.appendChild(buildEventCard(it.ev, renderHoy));
+    }
+  });
 }
 
 /* ============================================================
@@ -4041,17 +4437,20 @@ function renderHoy(){
    ============================================================ */
 function refreshBackupReminder(){
   const dot = document.getElementById("backup-dot");
+  const dotMore = document.getElementById("backup-dot-more");
   const sub = document.getElementById("backup-sub");
   if (!data.lastExport){
     dot.classList.add("show");
-    if (sub) sub.textContent = "Nunca has exportado un respaldo — hazlo para no perder tu progreso.";
+    if (dotMore) dotMore.classList.add("show");
+    if (sub) sub.textContent = "Nunca has respaldado — hazlo aquí abajo.";
     return;
   }
   const daysSince = Math.floor((Date.now() - data.lastExport) / DAY_MS);
   const stale = daysSince >= 14;
   dot.classList.toggle("show", stale);
+  if (dotMore) dotMore.classList.toggle("show", stale);
   if (sub) sub.textContent = stale
-    ? `Han pasado ${daysSince} días desde tu último respaldo. Considera exportar de nuevo.`
+    ? `Hace ${daysSince} días. Exporta de nuevo.`
     : `Último respaldo: hace ${daysSince} día${daysSince===1?"":"s"}.`;
 }
 
@@ -4162,11 +4561,15 @@ function accountAmount(accId){
   return amount;
 }
 
-function switchMode(mode){
+function switchMode(mode, opts){
+  opts = opts || {};
+  currentMode = mode;
   document.querySelectorAll(".mode-opt").forEach(o => o.classList.toggle("active", o.dataset.mode === mode));
   document.getElementById("mode-tasks").style.display = mode === "tasks" ? "" : "none";
   document.getElementById("mode-finance").style.display = mode === "finance" ? "" : "none";
+  document.querySelectorAll(".bnav-item[data-view]").forEach(b => b.classList.toggle("active", mode === "tasks" && b.dataset.view === currentView));
   if (mode === "finance") renderFinanceAll();
+  if (!opts.skipHistory) pushNavState();
 }
 document.querySelectorAll(".mode-opt").forEach(o => o.addEventListener("click", () => switchMode(o.dataset.mode)));
 
